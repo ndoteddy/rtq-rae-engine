@@ -1,0 +1,63 @@
+@if (queue.status() !== 'open') {
+  <div class="offline" role="alert">Reconnecting…</div>
+}
+
+<div class="tv" data-bs-theme="dark">
+  <header class="d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <div class="tv-title">Queue status</div>
+    </div>
+    <div class="tv-clock">{{ now() | date: 'shortTime' }}</div>
+  </header>
+
+  <div class="row g-4">
+    <div class="col-md-6">
+      <section class="tv-panel">
+        <h2>Waiting</h2>
+        <ol>
+          @for (item of queue.waiting(); track item.id; let i = $index) {
+            <li [class.high]="item.priority === 'high'">
+              <span>{{ item.label }}</span>
+              <span class="tv-num">#{{ i + 1 }}</span>
+            </li>
+          } @empty {
+            <li class="muted">No one waiting</li>
+          }
+        </ol>
+      </section>
+    </div>
+
+    <div class="col-md-6">
+      <section class="tv-panel processing">
+        <h2>Now Processing</h2>
+        <ol>
+          @for (item of queue.processing(); track item.id) {
+            <li>
+              <div class="flex-grow-1">
+                <div class="d-flex justify-content-between">
+                  <span>{{ item.label }}</span>
+                  <span class="tv-num">{{ item.startedAt | date: 'shortTime' }}</span>
+                </div>
+                <div class="progress mt-2" role="progressbar" aria-label="Progress"
+                     [attr.aria-valuenow]="progress(item)" aria-valuemin="0" aria-valuemax="100">
+                  <div class="progress-bar bg-success" [style.width.%]="progress(item)"></div>
+                </div>
+              </div>
+            </li>
+          } @empty {
+            <li class="muted">Idle</li>
+          }
+        </ol>
+      </section>
+    </div>
+  </div>
+
+  @if (queue.completed().length) {
+    <footer>
+      <span class="me-2">Recently completed:</span>
+      @for (item of queue.completed().slice(0, 5); track item.id) {
+        <span class="chip">{{ item.label }}</span>
+      }
+    </footer>
+  }
+</div>

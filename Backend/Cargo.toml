@@ -1,0 +1,32 @@
+[package]
+name = "queue-engine"
+version = "0.1.0"
+edition = "2021"
+description = "Universal real-time queue & resource allocation engine"
+
+[dependencies]
+# Async runtime: multi-threaded scheduler, timers, sync primitives (Notify, broadcast)
+tokio = { version = "1", features = ["full"] }
+# HTTP + WebSocket server
+axum = { version = "0.7", features = ["ws"] }
+# CORS and request tracing middleware
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+# JSON (de)serialization
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# Identifiers and timestamps that serialize to plain JSON strings
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+# Structured logging
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+# OpenAPI generation + embedded Swagger UI (vendored: no network needed at build time)
+utoipa = { version = "5", features = ["uuid", "chrono"] }
+utoipa-swagger-ui = { version = "8", features = ["axum", "vendored"] }
+
+[dev-dependencies]
+# Drive the router in-process (no sockets) in integration tests
+tower = { version = "0.5", features = ["util"] }
+http-body-util = "0.1"
+# Virtual time (`start_paused`) for worker tests
+tokio = { version = "1", features = ["test-util"] }

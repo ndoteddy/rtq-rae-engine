@@ -1,0 +1,162 @@
+<main class="container-xxl py-4">
+  <header class="kiosk-hero d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div class="d-flex align-items-center gap-3">
+      <span class="kiosk-brand" aria-hidden="true">Q</span>
+      <div>
+        <h1 class="h3 mb-1 fw-bold">Queue Operations</h1>
+        <small class="hero-sub">Real-time queue &amp; resource allocation · tenant <span class="badge rounded-pill hero-badge">{{ queue.snapshot()?.tenant ?? '…' }}</span></small>
+      </div>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <a class="btn btn-light btn-sm fw-semibold" href="/display" target="_blank" rel="noopener">Open display ↗</a>
+      <span class="status" [attr.data-status]="queue.status()">{{ queue.status() }}</span>
+    </div>
+  </header>
+
+  <div class="row g-3 mb-4" aria-label="Queue summary">
+    <div class="col-12 col-sm-4">
+      <div class="card stat-card border-0 shadow-sm"><div class="card-body d-flex align-items-center gap-3">
+        <span class="stat-icon accent-warn" aria-hidden="true">⏳</span>
+        <div><div class="stat-value">{{ queue.waiting().length }}</div><div class="stat-label">Waiting</div></div>
+      </div></div>
+    </div>
+    <div class="col-12 col-sm-4">
+      <div class="card stat-card border-0 shadow-sm"><div class="card-body d-flex align-items-center gap-3">
+        <span class="stat-icon accent-brand" aria-hidden="true">▶</span>
+        <div><div class="stat-value">{{ queue.processing().length }}</div><div class="stat-label">In progress</div></div>
+      </div></div>
+    </div>
+    <div class="col-12 col-sm-4">
+      <div class="card stat-card border-0 shadow-sm"><div class="card-body d-flex align-items-center gap-3">
+        <span class="stat-icon accent-ok" aria-hidden="true">✓</span>
+        <div><div class="stat-value">{{ queue.completed().length }}</div><div class="stat-label">Recently done</div></div>
+      </div></div>
+    </div>
+  </div>
+
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <form class="card border-0 shadow-sm form-card" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <div class="card-body">
+          <h2 class="h6 text-uppercase text-secondary mb-3">New item</h2>
+
+          <div class="mb-3">
+            <label class="form-label" for="f-label">Label</label>
+            <input id="f-label" class="form-control" type="text" formControlName="label" maxlength="80"
+                   placeholder="Customer, order or job name"
+                   [class.is-invalid]="form.controls.label.touched && form.controls.label.invalid" />
+            @if (form.controls.label.touched && form.controls.label.invalid) {
+              <div class="invalid-feedback d-block">Enter 2–80 characters.</div>
+            }
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="f-priority">Priority</label>
+            <select id="f-priority" class="form-select" formControlName="priority">
+              @for (p of priorities; track p) {
+                <option [value]="p">{{ p }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="f-duration">Estimated duration (seconds)</label>
+            <input id="f-duration" class="form-control" type="number" formControlName="durationSeconds" min="1" max="60"
+                   [class.is-invalid]="form.controls.durationSeconds.invalid" />
+            @if (form.controls.durationSeconds.invalid) {
+              <div class="invalid-feedback d-block">Between 1 and 60.</div>
+            }
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label" for="f-notes">Notes (optional)</label>
+            <textarea id="f-notes" class="form-control" formControlName="notes" rows="2"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg w-100 btn-brand" [disabled]="form.invalid || submitting()">
+            @if (submitting()) {
+              <span class="spinner-border spinner-border-sm me-2" aria-hidden="true"></span>Adding…
+            } @else {
+              Add to queue
+            }
+          </button>
+
+          @if (notice(); as n) {
+            <div class="alert mt-3 mb-0 py-2" [class.alert-success]="n.kind === 'ok'" [class.alert-danger]="n.kind === 'error'" role="status">{{ n.text }}</div>
+          }
+        </div>
+      </form>
+    </div>
+
+    <div class="col-lg-8 d-flex flex-column gap-4">
+      <section class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent d-flex align-items-center justify-content-between">
+          <h2 class="h6 text-uppercase text-secondary mb-0">Waiting <span class="badge text-bg-warning ms-1">{{ queue.waiting().length }}</span></h2>
+        </div>
+        <div>
+          @for (item of queue.waiting(); track item.id; let i = $index) {
+            <div class="queue-item" [class.is-high]="item.priority === 'high'">
+              <span class="pos">{{ i + 1 }}</span>
+              <div class="flex-grow-1">
+                <div class="label">{{ item.label }}</div>
+                <small class="text-secondary">queued {{ item.enqueuedAt | date: 'shortTime' }}@if (duration(item.payload?.durationMs); as d) { · ~{{ d }}}</small>
+              </div>
+              @if (item.priority === 'high') {
+                <span class="badge rounded-pill badge-high">HIGH</span>
+              }
+              <span class="d-flex gap-2">
+                @if (item.priority !== 'high') {
+                  <button type="button" class="btn btn-sm btn-outline-primary" (click)="prioritize(item.id)">Prioritize</button>
+                }
+                <button type="button" class="btn btn-sm btn-outline-danger" (click)="cancel(item.id)">Cancel</button>
+              </span>
+            </div>
+          } @empty {
+            <p class="empty-state mb-0"><span class="empty-icon" aria-hidden="true">☕</span>Nothing waiting.</p>
+          }
+        </div>
+      </section>
+
+      <section class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent">
+          <h2 class="h6 text-uppercase text-secondary mb-0">Now processing <span class="badge text-bg-primary ms-1">{{ queue.processing().length }}</span></h2>
+        </div>
+        <div>
+          @for (item of queue.processing(); track item.id) {
+            <div class="queue-item">
+              <div class="flex-grow-1">
+                <div class="d-flex justify-content-between">
+                  <span class="label">{{ item.label }}</span>
+                  <small class="text-secondary">{{ progress(item) }}% · {{ item.worker }}</small>
+                </div>
+                <div class="progress mt-2" role="progressbar" aria-label="Progress"
+                     [attr.aria-valuenow]="progress(item)" aria-valuemin="0" aria-valuemax="100">
+                  <div class="progress-bar progress-bar-striped progress-bar-animated" [style.width.%]="progress(item)"></div>
+                </div>
+              </div>
+            </div>
+          } @empty {
+            <p class="empty-state mb-0"><span class="empty-icon" aria-hidden="true">💤</span>Idle.</p>
+          }
+        </div>
+      </section>
+
+      <section class="card border-0 shadow-sm">
+        <div class="card-header bg-transparent">
+          <h2 class="h6 text-uppercase text-secondary mb-0">Recently completed</h2>
+        </div>
+        <div>
+          @for (item of queue.completed().slice(0, 5); track item.id) {
+            <div class="queue-item">
+              <span class="text-success" aria-hidden="true">✓</span>
+              <span class="label flex-grow-1">{{ item.label }}</span>
+              <small class="text-secondary">{{ item.completedAt | date: 'mediumTime' }} · {{ item.worker }}</small>
+            </div>
+          } @empty {
+            <p class="empty-state mb-0">Nothing completed yet.</p>
+          }
+        </div>
+      </section>
+    </div>
+  </div>
+</main>

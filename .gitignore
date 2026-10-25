@@ -1,0 +1,52 @@
+# ---------- Rust (Backend) ----------
+Backend/target/
+**/*.rs.bk
+*.pdb
+# Cargo.lock IS committed (this is a binary crate; reproducible builds)
+
+# ---------- Node / Angular (Frontend) ----------
+node_modules/
+Frontend/dist/
+Frontend/.angular/
+Frontend/out-tsc/
+Frontend/tmp/
+Frontend/coverage/
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# ---------- Playwright artifacts (traces can contain request headers / API keys) ----------
+Frontend/playwright-report/
+Frontend/playwright-report-integration/
+Frontend/test-results/
+Frontend/blob-report/
+Frontend/playwright/.cache/
+
+# ---------- Secrets & local config (never commit) ----------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+api-keys*.txt
+
+# ---------- Editors / OS ----------
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/launch.json
+!.vscode/tasks.json
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---------- Logs & temp ----------
+*.log
+*.tmp
+
+# ---------- AI assistant local state ----------
+.claude/
